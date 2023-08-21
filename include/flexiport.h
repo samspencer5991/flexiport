@@ -5,27 +5,20 @@
  *      Author: samspencer
  */
 
-#ifndef LIBRARIES_FLEXI_PORT_FLEXIPORT_H_
-#define LIBRARIES_FLEXI_PORT_FLEXIPORT_H_
+#ifndef FLEXIPORT_H_
+#define FLEXIPORT_H_
 
-#include "gpio.h"
-#include "adc.h"
-#include "usart.h"
+#ifdef FRAMEWORK_STM32CUBE
+#ifdef STM32G4xx
+#include "stm32g4xx_hal.h"
+#endif
+#endif
 #include "midi.h"
 #include "buttons.h"
-
-// The device link version number uses a x.x.x system, with the dots left out.
-// This allows for 0-9 sub-versions and 0-9 sub-sub-versions
-// This is then converted to a uint16_t number
-#define DEVICE_LINK_VERSION	100
 
 #define NUM_DEVICE_LINK_SLAVES	32
 
 #define NUM_FLEXI_ADC_BUF_SAMPLES	3
-
-#ifndef NUM_FLEXIPORTS
-#error "NUM_FLEXIPORTS must be defined"
-#endif
 
 #ifndef FLEXI_ADC_HYSTERESIS_BOUNDRY
 #define FLEXI_ADC_HYSTERESIS_BOUNDRY 2
@@ -35,8 +28,6 @@
 
 
 #define FLEXI_MIDI_RX_BUF_SIZE 1024
-// Device Link definitions
-
 
 // Device Link device list
 #define DL_BRIDGE4 			0x0000
@@ -47,14 +38,14 @@
 #define DL_TRI_SWITCH		0x0005
 
 // Device Link generic command list
-#define DEVICE_LINK_ALIVE_CHECK_BYTE		0x80
+#define DEVICE_LINK_ALIVE_CHECK_BYTE			0x80
 #define DEVICE_LINK_BANK_UP_CMD					0x81
 #define DEVICE_LINK_BANK_DOWN_CMD				0x82
 #define DEVICE_LINK_GOTO_BANK_CMD				0x83
 #define DEVICE_LINK_BANK_NAME_CMD				0x84
-#define DEVICE_LINK_SWITCH_GROUP_CMD		0x85
+#define DEVICE_LINK_SWITCH_GROUP_CMD			0x85
 
-#define FLEXI_DEBOUNCE_LOW_TIME 	20
+#define FLEXI_DEBOUNCE_LOW_TIME 		20
 #define FLEXI_DEBOUNCE_MED_TIME		50
 #define FLEXI_DEBOUNCE_HIGH_TIME 	100
 
@@ -80,12 +71,12 @@ typedef enum
 	FlexiMidiOutTypeB,				// MIDI output Type B
 	FlexiMidiOutTip,					// MIDI output Tip Active
 	FlexiMidiOutRing,					// MIDI output Ring Active
-	FlexiDeviceLinkMaster,		// Connected to another unit to link as a master
+	FlexiDeviceLinkMaster,			// Connected to another unit to link as a master
 	FlexiDeviceLinkSlave,			// Connected to another unit to link as a slave
-	FlexiDualExpressionIn,		// 2x expression pedal
-	FlexiSingleExpressionIn,	// Single expression pedal
+	FlexiDualExpressionIn,			// 2x expression pedal
+	FlexiSingleExpressionIn,		// Single expression pedal
 	FlexiSwitchIn,						// Dual switch input
-	FlexiSwitchOut,						// Dual switch output
+	FlexiSwitchOut,					// Dual switch output
 	FlexiVoltageOut,					// Dual voltage output
 	FlexiTapTempoOut,
 	FlexiPulseOut,
@@ -95,7 +86,7 @@ typedef enum
 typedef enum
 {
 	FlexiConnected,
-	FlexiRemoved,				// No connector has been detected
+	FlexiRemoved,						// No connector has been detected
 } FlexiportStatus;
 
 // All possible configurations for each channel of a flexiport
@@ -321,7 +312,7 @@ void flexi_deviceLinkIncrementAliveCheck(Flexiport* flexiport, DeviceLink* devic
 
 FlexiErrorState flexi_checkPorts(Flexiport* flexiPort);
 FlexiErrorState flexi_pollAdcConversion(Flexiport* flexiPort);
-FlexiErrorState flexi_checkAdcConversion(Flexiport* flexiPort);
+void flexi_checkAdcConversion(Flexiport* flexiPort);
 
 // Switch control functions
 FlexiErrorState flexi_setTipVSwitch(Flexiport* flexiPort, FlexiSwitchState state);
@@ -337,4 +328,4 @@ FlexiErrorState flexi_setHoldTimer(Flexiport* flexiport, TIM_HandleTypeDef *timH
 void flexi_holdTimerElapsed(Flexiport* flexiport);
 
 void flexi_uartErrorHandler(Flexiport* flexiport);
-#endif /* LIBRARIES_FLEXI_PORT_FLEXIPORT_H_ */
+#endif /* FLEXIPORT_H_ */

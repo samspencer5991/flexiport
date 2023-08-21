@@ -29,6 +29,11 @@
 
 #define NEW_FLEXI_DEBOUNCE_TIME	500
 
+#define MIDI_RX_BUF_SIZE		256
+
+#define FALSE	0
+#define TRUE	1
+
 // Peripheral Init and De-Init private functions
 FlexiErrorState flexi_gpioOutputInit(Flexiport* flexiport);
 FlexiErrorState flexi_gpioInputExtiInit(Flexiport* flexiport);
@@ -426,10 +431,6 @@ FlexiErrorState flexi_deviceLinkSendGoToBank(Flexiport* flexiport, DeviceLink* d
 FlexiErrorState flexi_deviceLinkSendSwitchGroupEvent(Flexiport* flexiport, DeviceLink* deviceLink,
 																											uint8_t group, uint8_t switchEvent)
 {
-	if(group >= NUM_SWITCH_GROUPS)
-	{
-		return FlexiParamError;
-	}
 	uint8_t packet[3];
 	packet[0] = DEVICE_LINK_SWITCH_GROUP_CMD;
 	packet[1] = group;
