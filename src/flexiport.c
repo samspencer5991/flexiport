@@ -1177,7 +1177,7 @@ FlexiErrorState flexi_adcDualInit(Flexiport* flexiport)
 #endif
 #endif
 
-  flexi_configureGpioClock(flexiport->adcPortTip);
+	flexi_configureGpioClock(flexiport->adcPortTip);
 	flexi_configureGpioClock(flexiport->adcPortRing);
 
 	GPIO_InitStruct.Pin = flexiport->adcPinTip;
@@ -1199,7 +1199,7 @@ FlexiErrorState flexi_adcDualInit(Flexiport* flexiport)
 	flexiport->hadcDma->Init.Priority = DMA_PRIORITY_LOW;
 	if (HAL_DMA_Init(flexiport->hadcDma) != HAL_OK)
 	{
-		Error_Handler();
+		return FlexiHalError;
 	}
 
 	__HAL_LINKDMA(flexiport->hadc,DMA_Handle,*flexiport->hadcDma);
@@ -1208,10 +1208,10 @@ FlexiErrorState flexi_adcDualInit(Flexiport* flexiport)
 	HAL_NVIC_SetPriority(flexiport->adcIrq, 0, 0);
 	HAL_NVIC_EnableIRQ(flexiport->adcIrq);
 
-  if (HAL_ADC_Init(flexiport->hadc) != HAL_OK)
-  {
-    //Error_Handler();
-  }
+	if (HAL_ADC_Init(flexiport->hadc) != HAL_OK)
+	{
+		return FlexiHalError;
+	}
 
 #if defined(STM32G473xx) || defined(STM32G491xx)
   if(flexiport->hadc->Instance == ADC1)
@@ -1219,7 +1219,7 @@ FlexiErrorState flexi_adcDualInit(Flexiport* flexiport)
 		multimode.Mode = ADC_MODE_INDEPENDENT;
 		if (HAL_ADCEx_MultiModeConfigChannel(flexiport->hadc, &multimode) != HAL_OK)
 		{
-			Error_Handler();
+			return FlexiHalError;
 		}
   }
 #endif
@@ -1239,14 +1239,14 @@ FlexiErrorState flexi_adcDualInit(Flexiport* flexiport)
 #endif
   if (HAL_ADC_ConfigChannel(flexiport->hadc, &sConfig) != HAL_OK)
   {
-    Error_Handler();
+    return FlexiHalError;
   }
 
   sConfig.Channel = flexiport->adcChannelB;
   sConfig.Rank = ADC_REGULAR_RANK_2;
   if (HAL_ADC_ConfigChannel(flexiport->hadc, &sConfig) != HAL_OK)
   {
-    Error_Handler();
+    return FlexiHalError;
   }
   return FlexiOk;
 }
@@ -1321,7 +1321,7 @@ FlexiErrorState flexi_uartInit(Flexiport* flexiport, uint8_t swapPins, uint8_t s
 
     if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
     {
-      Error_Handler();
+      return FlexiHalError;
     }
 
     flexi_configureUartAltFunction(&GPIO_InitStruct, flexiport);
@@ -1354,7 +1354,8 @@ FlexiErrorState flexi_uartInit(Flexiport* flexiport, uint8_t swapPins, uint8_t s
     flexiport->huartDma->Init.Priority = DMA_PRIORITY_LOW;
     if (HAL_DMA_Init(flexiport->huartDma) != HAL_OK)
     {
-      Error_Handler();
+      return FlexiHalError;
+
     }
 
     __HAL_LINKDMA(flexiport->huart,hdmarx,*flexiport->huartDma);
