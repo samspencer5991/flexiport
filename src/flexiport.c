@@ -277,7 +277,6 @@ FlexiErrorState flexi_midiBegin(Flexiport* flexiport)
 	if(flexiport->midiHandle->direction != MidiOutOnly)
 	{
 		// Set the state to waiting for the status byte
-		flexiport->midiHandle->pendingRxType = MidiStatus;
 		if(flexiport->midiHandle->deviceType == UartMidi)
 		{
 			// Check if the system is being restarted
