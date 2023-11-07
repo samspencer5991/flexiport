@@ -319,10 +319,7 @@ FlexiErrorState flexi_deviceLinkAliveCheck(Flexiport* flexiport, DeviceLink* dev
 	}
 	uint8_t aliveByte = DEVICE_LINK_ALIVE_CHECK_BYTE;
 
-	if(midi_SendSysEx(flexiport->midiHandle, &aliveByte, 1, sysExId) != MidiOk)
-	{
-		return FlexiHalError;
-	}
+	midi_SendSysEx(flexiport->midiHandle, &aliveByte, 1, sysExId);
 	flexiport->aliveCheckSent = TRUE;
 	return FlexiOk;
 }
@@ -339,20 +336,14 @@ FlexiErrorState flexi_deviceLinkSendBankUp(Flexiport* flexiport, DeviceLink* dev
 		{
 			bankUpMessage[i+2] = bankName[i];
 		}
-		if(midi_SendSysEx(flexiport->midiHandle, bankUpMessage, 2+bankNameLen, sysExId) != MidiOk)
-		{
-			return FlexiHalError;
-		}
+		midi_SendSysEx(flexiport->midiHandle, bankUpMessage, 2+bankNameLen, sysExId);
 		return FlexiOk;
 	}
 	else if(deviceLink->role == DeviceLinkSlaveRole && flexiport->config->mode == FlexiDeviceLinkSlave)
 	{
 		uint8_t bankUpByte = DEVICE_LINK_BANK_UP_CMD;
 
-		if(midi_SendSysEx(flexiport->midiHandle, &bankUpByte, 1, sysExId) != MidiOk)
-		{
-			return FlexiHalError;
-		}
+		midi_SendSysEx(flexiport->midiHandle, &bankUpByte, 1, sysExId);
 		return FlexiOk;
 	}
 	return FlexiParamError;
@@ -370,20 +361,14 @@ FlexiErrorState flexi_deviceLinkSendBankDown(Flexiport* flexiport, DeviceLink* d
 		{
 			bankDownMessage[i+2] = bankName[i];
 		}
-		if(midi_SendSysEx(flexiport->midiHandle, bankDownMessage, 2+bankNameLen, sysExId) != MidiOk)
-		{
-			return FlexiHalError;
-		}
+		midi_SendSysEx(flexiport->midiHandle, bankDownMessage, 2+bankNameLen, sysExId);
 		return FlexiOk;
 	}
 	else if(deviceLink->role == DeviceLinkSlaveRole)
 	{
 		uint8_t bankDownByte = DEVICE_LINK_BANK_DOWN_CMD;
 
-		if(midi_SendSysEx(flexiport->midiHandle, &bankDownByte, 1, sysExId) != MidiOk)
-		{
-			return FlexiHalError;
-		}
+		midi_SendSysEx(flexiport->midiHandle, &bankDownByte, 1, sysExId);
 		return FlexiOk;
 	}
 	return FlexiParamError;
@@ -406,10 +391,7 @@ FlexiErrorState flexi_deviceLinkSendGoToBank(Flexiport* flexiport, DeviceLink* d
 		{
 			goToBankMessage[i+3] = bankName[i];
 		}
-		if(midi_SendSysEx(flexiport->midiHandle, goToBankMessage, 3+bankNameLen, sysExId) != MidiOk)
-		{
-			return FlexiHalError;
-		}
+		midi_SendSysEx(flexiport->midiHandle, goToBankMessage, 3+bankNameLen, sysExId);
 		return FlexiOk;
 	}
 	else if(deviceLink->role == DeviceLinkSlaveRole)
@@ -418,10 +400,7 @@ FlexiErrorState flexi_deviceLinkSendGoToBank(Flexiport* flexiport, DeviceLink* d
 		goToBankMessage[0] = DEVICE_LINK_GOTO_BANK_CMD;
 		goToBankMessage[1] = bank;
 
-		if(midi_SendSysEx(flexiport->midiHandle, goToBankMessage, 2, sysExId) != MidiOk)
-		{
-			return FlexiHalError;
-		}
+		midi_SendSysEx(flexiport->midiHandle, goToBankMessage, 2, sysExId);
 		return FlexiOk;
 	}
 	return FlexiParamError;
@@ -434,12 +413,8 @@ FlexiErrorState flexi_deviceLinkSendSwitchGroupEvent(Flexiport* flexiport, Devic
 	packet[0] = DEVICE_LINK_SWITCH_GROUP_CMD;
 	packet[1] = group;
 	packet[2] = switchEvent;
-	if(midi_SendSysEx(flexiport->midiHandle, packet, 3, sysExId) != MidiOk)
-	{
-		return FlexiHalError;
-	}
+	midi_SendSysEx(flexiport->midiHandle, packet, 3, sysExId);
 	return FlexiOk;
-	return FlexiParamError;
 }
 
 FlexiErrorState flexi_rxUartHandler(Flexiport* flexiport, uint16_t size)
