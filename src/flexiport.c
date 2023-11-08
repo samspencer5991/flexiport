@@ -31,6 +31,8 @@
 
 #define MIDI_RX_BUF_SIZE		256
 
+#define MIDI_CLOCK_UNASSIGNED -1
+
 #define FALSE	0
 #define TRUE	1
 
@@ -92,7 +94,7 @@ void flexi_initPort(Flexiport* flexiport)
 		flexiport->filteredReadings[i] = 0;
 	}
 	flexiport->adcReadIndex = 0;
-	flexiport->config->midiClock = NULL;
+	flexiport->config->midiClock = MIDI_CLOCK_UNASSIGNED;
 	flexiport->expReadingChanged[0] = FALSE;
 	flexiport->expReadingChanged[1] = FALSE;
 

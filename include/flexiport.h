@@ -174,7 +174,7 @@ typedef struct
 {
 	/* non-volatile */
 	FlexiportMode mode;					// Overall operating mode of the port
-	MidiClockTx* midiClock;			// Assigned MIDI clock for tempo related functions
+	int8_t midiClock;				// Assigned MIDI clock for tempo related functions. -1 = unassigned
 	uint16_t calibrationMinA;
 	uint16_t calibrationMaxA;
 	uint16_t calibrationMinB;
