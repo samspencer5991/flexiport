@@ -689,7 +689,7 @@ FlexiErrorState flexi_setModeExpIn(Flexiport* flexiport, FlexiportMode expMode)
 
 	// Set both A and B pins to high z state.
 	// This accounts for the flexiport having a separate pin for the ADC
-	flexi_gpioHighZInit(flexiport);
+	//flexi_gpioHighZInit(flexiport);
 	// Initialise the ADC peripheral for both A and B channels of the flexiport
 	flexi_adcDualInit(flexiport);
 
@@ -1015,6 +1015,11 @@ void flexi_setPortSwitchesExpressionIn(Flexiport* flexiport, FlexiportMode expMo
 {
 	// For a single passive expression pedal, the ring needs to be connected to a constant voltage
 	// However for a dual expression pedal, the pedal outputs it's own voltage.
+	
+	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
 	if(expMode == FlexiSingleExpressionIn)
 	{
 		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_SET);
@@ -1023,10 +1028,6 @@ void flexi_setPortSwitchesExpressionIn(Flexiport* flexiport, FlexiportMode expMo
 	{
 		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
 	}
-	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
 }
 
 
@@ -1075,7 +1076,7 @@ FlexiErrorState flexi_gpioInputExtiInit(Flexiport* flexiport)
   return FlexiOk;
 }
 
-FlexiErrorState flexi_gpioHighZInit(Flexiport* flexiport)
+FlexiErrorState flexi_gpioHighZInit(Flexiport* flexiport) 
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
@@ -1094,64 +1095,7 @@ FlexiErrorState flexi_gpioHighZInit(Flexiport* flexiport)
 
 FlexiErrorState flexi_adcDualInit(Flexiport* flexiport)
 {
-#if defined(STM32G473xx) || defined(STM32G491xx)
-	ADC_MultiModeTypeDef multimode = {0};
-#endif
-	ADC_ChannelConfTypeDef sConfig = {0};
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-
-	/* DMA CONFIG */
-	/* DMA controller clock enable */
-	//__HAL_RCC_DMAMUX1_CLK_ENABLE();
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Channel1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(flexiport->adcDmaIrq, 0, 0);
-  HAL_NVIC_EnableIRQ(flexiport->adcDmaIrq);
-
-	/* ADC CONFIG */
-  flexiport->hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  flexiport->hadc->Init.Resolution = ADC_RESOLUTION_12B;
-  flexiport->hadc->Init.DataAlign = ADC_DATAALIGN_RIGHT;
-#if defined(STM32G473xx) || defined(STM32G491xx)
-  flexiport->hadc->Init.GainCompensation = 0;
-#endif
-  flexiport->hadc->Init.ScanConvMode = ADC_SCAN_ENABLE;
-  flexiport->hadc->Init.EOCSelection = ADC_EOC_SINGLE_CONV;
-  flexiport->hadc->Init.LowPowerAutoWait = DISABLE;
-  flexiport->hadc->Init.ContinuousConvMode = DISABLE;
-  flexiport->hadc->Init.NbrOfConversion = 2;
-  flexiport->hadc->Init.DiscontinuousConvMode = DISABLE;
-  flexiport->hadc->Init.ExternalTrigConv = ADC_SOFTWARE_START;
-  flexiport->hadc->Init.ExternalTrigConvEdge = ADC_EXTERNALTRIGCONVEDGE_NONE;
-  flexiport->hadc->Init.DMAContinuousRequests = DISABLE;
-  flexiport->hadc->Init.Overrun = ADC_OVR_DATA_PRESERVED;
-  flexiport->hadc->Init.OversamplingMode = DISABLE;
-
-#if defined(STM32G473xx) || defined(STM32G491xx)
-#ifdef ADC1
-		if(flexiport->hadc->Instance == ADC1)
-		{
-			__HAL_RCC_ADC12_CLK_ENABLE();
-			flexiport->hadcDma->Init.Request = DMA_REQUEST_ADC1;
-		}
-#endif
-#ifdef ADC2
-		if(flexiport->hadc->Instance == ADC2)
-		{
-			__HAL_RCC_ADC12_CLK_ENABLE();
-			flexiport->hadcDma->Init.Request = DMA_REQUEST_ADC2;
-		}
-#endif
-#ifdef ADC3
-		if(flexiport->hadc->Instance == ADC3)
-		{
-			//TODO
-		}
-#endif
-#endif
 
 	flexi_configureGpioClock(flexiport->adcPortTip);
 	flexi_configureGpioClock(flexiport->adcPortRing);
@@ -1166,64 +1110,6 @@ FlexiErrorState flexi_adcDualInit(Flexiport* flexiport)
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(flexiport->adcPortRing, &GPIO_InitStruct);
 
-	flexiport->hadcDma->Init.Direction = DMA_PERIPH_TO_MEMORY;
-	flexiport->hadcDma->Init.PeriphInc = DMA_PINC_DISABLE;
-	flexiport->hadcDma->Init.MemInc = DMA_MINC_ENABLE;
-	flexiport->hadcDma->Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
-	flexiport->hadcDma->Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
-	flexiport->hadcDma->Init.Mode = DMA_NORMAL;
-	flexiport->hadcDma->Init.Priority = DMA_PRIORITY_LOW;
-	if (HAL_DMA_Init(flexiport->hadcDma) != HAL_OK)
-	{
-		return FlexiHalError;
-	}
-
-	__HAL_LINKDMA(flexiport->hadc,DMA_Handle,*flexiport->hadcDma);
-
-	/* ADC1 interrupt Init */
-	HAL_NVIC_SetPriority(flexiport->adcIrq, 0, 0);
-	HAL_NVIC_EnableIRQ(flexiport->adcIrq);
-
-	if (HAL_ADC_Init(flexiport->hadc) != HAL_OK)
-	{
-		return FlexiHalError;
-	}
-
-#if defined(STM32G473xx) || defined(STM32G491xx)
-  if(flexiport->hadc->Instance == ADC1)
-  {
-		multimode.Mode = ADC_MODE_INDEPENDENT;
-		if (HAL_ADCEx_MultiModeConfigChannel(flexiport->hadc, &multimode) != HAL_OK)
-		{
-			return FlexiHalError;
-		}
-  }
-#endif
-
-  /** Configure Regular Channel
-  */
-  sConfig.Channel = flexiport->adcChannelA;
-  sConfig.Rank = ADC_REGULAR_RANK_1;
-#if defined(STM32G07xK) || defined(STM32G0B1xx)
-  sConfig.SamplingTime = ADC_SAMPLETIME_7CYCLES_5;
-#endif
-#if defined(STM32G473xx) || defined(STM32G491xx)
-  sConfig.SamplingTime = ADC_SAMPLETIME_247CYCLES_5;
-  sConfig.SingleDiff = ADC_SINGLE_ENDED;
-  sConfig.OffsetNumber = ADC_OFFSET_NONE;
-  sConfig.Offset = 0;
-#endif
-  if (HAL_ADC_ConfigChannel(flexiport->hadc, &sConfig) != HAL_OK)
-  {
-    return FlexiHalError;
-  }
-
-  sConfig.Channel = flexiport->adcChannelB;
-  sConfig.Rank = ADC_REGULAR_RANK_2;
-  if (HAL_ADC_ConfigChannel(flexiport->hadc, &sConfig) != HAL_OK)
-  {
-    return FlexiHalError;
-  }
   return FlexiOk;
 }
 
