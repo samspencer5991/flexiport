@@ -270,34 +270,6 @@ FlexiErrorState flexi_setHoldTimer(Flexiport* flexiport, TIM_HandleTypeDef *timH
 	return FlexiOk;
 }
 
-FlexiErrorState flexi_midiBegin(Flexiport* flexiport)
-{
-	flexiport->midiHandle->active = TRUE;
-	flexiport->midiHandle->newMessage = FALSE;
-	flexiport->midiHandle->txDataPending = FALSE;
-	flexiport->midiHandle->txState = MidiReady;
-	if(flexiport->midiHandle->direction != MidiOutOnly)
-	{
-		// Set the state to waiting for the status byte
-		if(flexiport->midiHandle->deviceType == UartMidi)
-		{
-			// Check if the system is being restarted
-			//if(midiHandle->huart->)
-			// Wait until uart is ready
-			// Clear RXNE bit
-			flexiport->huart->Instance->RDR;
-			// Clear ORE flag
-			__HAL_UART_CLEAR_OREFLAG(flexiport->huart);
-			while(HAL_UART_GetState(flexiport->midiHandle->uartHandle) != HAL_UART_STATE_READY);
-			if(HAL_UARTEx_ReceiveToIdle_DMA(flexiport->midiHandle->uartHandle, flexiport->rawRxMidiBuf,
-																			MIDI_RX_BUF_SIZE) != HAL_OK)
-			{
-				return FlexiHalError;
-			}
-		}
-	}
-	return FlexiOk;
-}
 
 /**************************************************/
 /****************** DEVICE LINK *******************/
@@ -417,25 +389,6 @@ FlexiErrorState flexi_deviceLinkSendSwitchGroupEvent(Flexiport* flexiport, Devic
 	packet[1] = group;
 	packet[2] = switchEvent;
 	midi_SendSysEx(flexiport->midiHandle, packet, 3, sysExId);
-	return FlexiOk;
-}
-
-FlexiErrorState flexi_rxUartHandler(Flexiport* flexiport, uint16_t size)
-{
-	// Copy data into the midi handle buffer
-	for(uint16_t i=0; i<size; i++)
-	{
-		midi_ringBufferPut(&flexiport->midiHandle->rxBuf, flexiport->rawRxMidiBuf[i]);
-		// TODO: optimize buffer transfer
-	}
-	// Mark new data as being available on the MIDI interface
-	flexiport->midiHandle->newMessage = TRUE;
-	// Prepare for new transmission
-	if(HAL_UARTEx_ReceiveToIdle_DMA(flexiport->midiHandle->uartHandle, flexiport->rawRxMidiBuf,
-																	MIDI_RX_BUF_SIZE) != HAL_OK)
-	{
-		return FlexiHalError;
-	}
 	return FlexiOk;
 }
 
@@ -1117,20 +1070,6 @@ FlexiErrorState flexi_adcDualInit(Flexiport* flexiport)
 FlexiErrorState flexi_uartInit(Flexiport* flexiport, uint8_t swapPins, uint8_t speed)
 {
 	__disable_irq();
-	GPIO_InitTypeDef GPIO_InitStruct = {0};
-	RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-
-	// DMA config
-	/* DMA controller clock enable */
-  __HAL_RCC_DMAMUX1_CLK_ENABLE();
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Channel1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(flexiport->uartDmaIrq, 0, 0);
-  HAL_NVIC_EnableIRQ(flexiport->uartDmaIrq);
-
-
 	/* MX Init Code */
 	if(speed == UART_HIGH_SPEED)
 	{
@@ -1140,131 +1079,41 @@ FlexiErrorState flexi_uartInit(Flexiport* flexiport, uint8_t swapPins, uint8_t s
 	{
 		flexiport->huart->Init.BaudRate = 31250;
 	}
-  flexiport->huart->Init.WordLength = UART_WORDLENGTH_8B;
-  flexiport->huart->Init.StopBits = UART_STOPBITS_1;
-  flexiport->huart->Init.Parity = UART_PARITY_NONE;
-  flexiport->huart->Init.Mode = UART_MODE_TX_RX;
-  flexiport->huart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  flexiport->huart->Init.OverSampling = UART_OVERSAMPLING_16;
-  flexiport->huart->Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  flexiport->huart->Init.ClockPrescaler = UART_PRESCALER_DIV1;
-  if(swapPins)
-  {
-  	flexiport->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_SWAP_INIT;
-  	flexiport->huart->AdvancedInit.Swap = UART_ADVFEATURE_SWAP_ENABLE;
-  }
-  else
-  {
-  	flexiport->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  }
+	flexiport->huart->Init.WordLength = UART_WORDLENGTH_8B;
+	flexiport->huart->Init.StopBits = UART_STOPBITS_1;
+	flexiport->huart->Init.Parity = UART_PARITY_NONE;
+	flexiport->huart->Init.Mode = UART_MODE_TX_RX;
+	flexiport->huart->Init.HwFlowCtl = UART_HWCONTROL_NONE;
+	flexiport->huart->Init.OverSampling = UART_OVERSAMPLING_16;
+	flexiport->huart->Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+	flexiport->huart->Init.ClockPrescaler = UART_PRESCALER_DIV1;
+	if(swapPins)
+	{
+	flexiport->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_SWAP_INIT;
+	flexiport->huart->AdvancedInit.Swap = UART_ADVFEATURE_SWAP_ENABLE;
+	}
+	else
+	{
+	flexiport->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+	}
 
-  flexiport->huart->gState = HAL_UART_STATE_RESET;
-  /* HAL_UART_INIT Code */
-  if (flexiport->huart->gState == HAL_UART_STATE_RESET)
-  {
-    /* Allocate lock resource and initialize it */
-    flexiport->huart->Lock = HAL_UNLOCKED;
+	if (HAL_UART_Init(flexiport->huart) != HAL_OK)
+	{
+		return FlexiHalError;
+	}
+	if (HAL_UARTEx_SetTxFifoThreshold(flexiport->huart, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+	{
+		return FlexiHalError;
+	}
+	if (HAL_UARTEx_SetRxFifoThreshold(flexiport->huart, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
+	{
+		return FlexiHalError;
+	}
+	if (HAL_UARTEx_DisableFifoMode(flexiport->huart) != HAL_OK)
+	{
+		return FlexiHalError;
+	}
 
-    /* MspInit Code */
-    // Initialise peripheral clocks
-    PeriphClkInit.PeriphClockSelection = flexiport->uartPeriphClk;
-
-    if(flexiport->huart->Instance == USART1)
-    {
-    	PeriphClkInit.Usart1ClockSelection = 0;
-    }
-    else if(flexiport->huart->Instance == USART2)
-    {
-    	PeriphClkInit.Usart2ClockSelection = 0;
-    }
-    else if(flexiport->huart->Instance == USART3)
-    {
-    	PeriphClkInit.Usart3ClockSelection = 0;
-    }
-
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-      return FlexiHalError;
-    }
-
-    flexi_configureUartAltFunction(&GPIO_InitStruct, flexiport);
-    flexi_configureGpioClock(flexiport->portA);
-
-    GPIO_InitStruct.Pin = flexiport->pinA | flexiport->pinB;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(flexiport->portA, &GPIO_InitStruct);
-
-    if(flexiport->huart->Instance == USART1)
-    {
-    	flexiport->huartDma->Init.Request = DMA_REQUEST_USART1_RX;
-    }
-    else if(flexiport->huart->Instance == USART2)
-    {
-    	flexiport->huartDma->Init.Request = DMA_REQUEST_USART2_RX;
-    }
-    else if(flexiport->huart->Instance == USART3)
-    {
-    	flexiport->huartDma->Init.Request = DMA_REQUEST_USART3_RX;
-    }
-    flexiport->huartDma->Init.Direction = DMA_PERIPH_TO_MEMORY;
-    flexiport->huartDma->Init.PeriphInc = DMA_PINC_DISABLE;
-    flexiport->huartDma->Init.MemInc = DMA_MINC_ENABLE;
-    flexiport->huartDma->Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-    flexiport->huartDma->Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-    flexiport->huartDma->Init.Mode = DMA_NORMAL;
-    flexiport->huartDma->Init.Priority = DMA_PRIORITY_LOW;
-    if (HAL_DMA_Init(flexiport->huartDma) != HAL_OK)
-    {
-      return FlexiHalError;
-
-    }
-
-    __HAL_LINKDMA(flexiport->huart,hdmarx,*flexiport->huartDma);
-
-    HAL_NVIC_SetPriority(flexiport->uartIrq, 1, 1);
-    HAL_NVIC_EnableIRQ(flexiport->uartIrq);
-
-    /* HAL_UART_INIT Code */
-    flexiport->huart->gState = HAL_UART_STATE_BUSY;
-
-		__HAL_UART_DISABLE(flexiport->huart);
-
-		/* Set the UART Communication parameters */
-		if (UART_SetConfig(flexiport->huart) == HAL_ERROR)
-		{
-			return FlexiHalError;
-		}
-
-		if (flexiport->huart->AdvancedInit.AdvFeatureInit != UART_ADVFEATURE_NO_INIT)
-		{
-			UART_AdvFeatureConfig(flexiport->huart);
-		}
-
-		CLEAR_BIT(flexiport->huart->Instance->CR2, (USART_CR2_LINEN | USART_CR2_CLKEN));
-		CLEAR_BIT(flexiport->huart->Instance->CR3, (USART_CR3_SCEN | USART_CR3_HDSEL | USART_CR3_IREN));
-		__HAL_UART_ENABLE(flexiport->huart);
-
-		/* TEACK and/or REACK to check before moving huart->gState and huart->RxState to Ready */
-		if(UART_CheckIdleState(flexiport->huart) != HAL_OK)
-		{
-			return FlexiHalError;
-		}
-  }
-
-  if (HAL_UARTEx_SetTxFifoThreshold(flexiport->huart, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    return FlexiHalError;
-  }
-  if (HAL_UARTEx_SetRxFifoThreshold(flexiport->huart, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    return FlexiHalError;
-  }
-  if (HAL_UARTEx_DisableFifoMode(flexiport->huart) != HAL_OK)
-  {
-    return FlexiHalError;
-  }
   __enable_irq();
 
   return FlexiOk;
