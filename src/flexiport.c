@@ -315,13 +315,14 @@ void flexi_initDeviceLink(DeviceLink* deviceLink)
 // Send an alive check message to the attached slave device
 FlexiErrorState flexi_deviceLinkAliveCheck(Flexiport* flexiport, DeviceLink* deviceLink)
 {
-	if(deviceLink->role != DeviceLinkMasterRole && flexiport->config->mode != FlexiDeviceLink)
+	if(deviceLink->role != DeviceLinkMasterRole || flexiport->config->mode != FlexiDeviceLink)
 	{
 		return FlexiParamError;
 	}
 	uint8_t aliveByte = DEVICE_LINK_ALIVE_CHECK_BYTE;
 
-	midi_SendSysEx(flexiport->midiHandle, &aliveByte, 1, sysExId);
+	midi_Send(flexiport->midiHandle, ActiveSensing, 0, 0, 0);
+	//midi_SendSysEx(flexiport->midiHandle, &aliveByte, 1, sysExId);
 	flexiport->aliveCheckSent = TRUE;
 	return FlexiOk;
 }
