@@ -315,7 +315,7 @@ void flexi_initDeviceLink(DeviceLink* deviceLink)
 // Send an alive check message to the attached slave device
 FlexiErrorState flexi_deviceLinkAliveCheck(Flexiport* flexiport, DeviceLink* deviceLink)
 {
-	if(deviceLink->role != DeviceLinkMasterRole || flexiport->config->mode != FlexiDeviceLinkMaster)
+	if(deviceLink->role != DeviceLinkMasterRole && flexiport->config->mode != FlexiDeviceLink)
 	{
 		return FlexiParamError;
 	}
@@ -329,7 +329,7 @@ FlexiErrorState flexi_deviceLinkAliveCheck(Flexiport* flexiport, DeviceLink* dev
 // Sends a bank up device link message. If bankName is NULL, message is passed as a slave (no bank name)
 FlexiErrorState flexi_deviceLinkSendBankUp(Flexiport* flexiport, DeviceLink* deviceLink, char* bankName, uint8_t bankNameLen)
 {
-	if(deviceLink->role == DeviceLinkMasterRole && flexiport->config->mode == FlexiDeviceLinkMaster)
+	if(deviceLink->role == DeviceLinkMasterRole && flexiport->config->mode == FlexiDeviceLink)
 	{
 		uint8_t bankUpMessage[2+bankNameLen];
 		bankUpMessage[0] = DEVICE_LINK_BANK_UP_CMD;
@@ -341,7 +341,7 @@ FlexiErrorState flexi_deviceLinkSendBankUp(Flexiport* flexiport, DeviceLink* dev
 		midi_SendSysEx(flexiport->midiHandle, bankUpMessage, 2+bankNameLen, sysExId);
 		return FlexiOk;
 	}
-	else if(deviceLink->role == DeviceLinkSlaveRole && flexiport->config->mode == FlexiDeviceLinkSlave)
+	else if(deviceLink->role == DeviceLinkSlaveRole && flexiport->config->mode == FlexiDeviceLink)
 	{
 		uint8_t bankUpByte = DEVICE_LINK_BANK_UP_CMD;
 
@@ -732,11 +732,11 @@ FlexiErrorState flexi_setModeExpIn(Flexiport* flexiport, FlexiportMode expMode)
 FlexiErrorState flexi_setModeDeviceLinkMaster(Flexiport* flexiport)
 {
 	// If a special hardware mode has been assigned to the port, perform de-init
-	if(flexiport->config->mode != FlexiUnassigned && (flexiport->config->mode != FlexiDeviceLinkMaster))
+	if(flexiport->config->mode != FlexiUnassigned && (flexiport->config->mode != FlexiDeviceLink))
 	{
 		flexi_checkForDeInit(flexiport);
 	}
-	flexiport->config->mode = FlexiDeviceLinkMaster;
+	flexiport->config->mode = FlexiDeviceLink;
 	flexiport->midiHandle->direction = MidiFull;
 	// Initialise the UART peripheral
 	flexi_uartInit(flexiport, SWAP_UART_PINS, UART_HIGH_SPEED);
@@ -764,7 +764,7 @@ FlexiErrorState flexi_setModeDeviceLinkSlave(Flexiport* flexiport)
 		flexi_checkForDeInit(flexiport);
 	}
 
-	flexiport->config->mode = FlexiDeviceLinkSlave;
+	flexiport->config->mode = FlexiDeviceLink;
 	flexiport->midiHandle->direction = MidiFull;
 	// Initialise the UART peripheral
 	flexi_uartInit(flexiport, NO_SWAP_UART_PINS, UART_HIGH_SPEED);
@@ -1633,10 +1633,7 @@ void flexi_checkForDeInit(Flexiport* flexiport)
 	case (FlexiMidiOutTypeA || FlexiMidiOutTypeB):
 		flexi_uartDeInit(flexiport);
 		break;
-	case FlexiDeviceLinkMaster:
-		flexi_uartDeInit(flexiport);
-		break;
-	case FlexiDeviceLinkSlave:
+	case FlexiDeviceLink:
 		flexi_uartDeInit(flexiport);
 		break;
 	case FlexiSingleExpressionIn:

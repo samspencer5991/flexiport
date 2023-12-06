@@ -24,7 +24,7 @@
 #define FLEXI_ADC_HYSTERESIS_BOUNDRY 2
 #endif
 
-#define DEVICE_LINK_ALIVE_TIMEOUT			100
+#define DEVICE_LINK_ALIVE_TIMEOUT			1000
 
 
 #define FLEXI_MIDI_RX_BUF_SIZE 1024
@@ -66,21 +66,20 @@ typedef enum
 // Port wide configurations of a flexiport
 typedef enum
 {
-	FlexiUnassigned,					// No function assigned
-	FlexiMidiOutTypeA,				// MIDI output Type A
-	FlexiMidiOutTypeB,				// MIDI output Type B
-	FlexiMidiOutTip,					// MIDI output Tip Active
-	FlexiMidiOutRing,					// MIDI output Ring Active
-	FlexiDeviceLinkMaster,			// Connected to another unit to link as a master
-	FlexiDeviceLinkSlave,			// Connected to another unit to link as a slave
-	FlexiDualExpressionIn,			// 2x expression pedal
-	FlexiSingleExpressionIn,		// Single expression pedal
-	FlexiSwitchIn,						// Dual switch input
-	FlexiSwitchOut,					// Dual switch output
-	FlexiVoltageOut,					// Dual voltage output
+	FlexiUnassigned,				// No function assigned
+	FlexiMidiOutTypeA,			// MIDI output Type A
+	FlexiMidiOutTypeB,			// MIDI output Type B
+	FlexiMidiOutTip,				// MIDI output Tip Active
+	FlexiMidiOutRing,				// MIDI output Ring Active
+	FlexiDeviceLink,				// Connected to another unit to link. Master/slave is set in the device settings
+	FlexiDualExpressionIn,		// 2x expression pedal
+	FlexiSingleExpressionIn,	// Single expression pedal
+	FlexiSwitchIn,					// Dual switch input
+	FlexiSwitchOut,				// Dual switch output
+	FlexiVoltageOut,				// Dual voltage output
 	FlexiTapTempoOut,
 	FlexiPulseOut,
-	FlexiFavSwitchOut					// Strymon single Fav switch emulation
+	FlexiFavSwitchOut				// Strymon single Fav switch emulation
 } FlexiportMode;
 
 typedef enum
@@ -264,7 +263,7 @@ typedef struct
 
 	// Device link variables
 	DeviceLinkState deviceLinkPortState;
-	uint8_t aliveCheckSent;
+	uint8_t aliveCheckSent;					// Flag to indicate that an alive check has been sent
 	DeviceLinkPortDirection deviceLinkDirection;
 } Flexiport;
 

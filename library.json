@@ -1,6 +1,6 @@
 {
     "name": "Flexiport",
-    "version": "0.2.2",
+    "version": "0.2.3",
     "keywords": "flexiport",
     "description": "Drivers and handling for Flexiport hardware",
     "repository": {
