@@ -249,7 +249,10 @@ typedef struct
 	uint8_t rawRxMidiBuf[FLEXI_MIDI_RX_BUF_SIZE];
 
 	// External footswitch input variables
-	FlexiExtIn extSwitchIn;
+	//FlexiExtIn extSwitchIn;
+	Button extSwitchInTip;		// Physical Tip button
+	Button extSwitchInRing;		// Physical Ring button
+	Button extSwitchInTipRing;	// Emulated button, triggered in software from Tip and Ring events
 
 	// A separate pin/port may be used for EXTI events to avoid NVIC conflicts
 	// A/B may be changed depending on UART configuration

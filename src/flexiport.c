@@ -98,15 +98,9 @@ void flexi_initPort(Flexiport* flexiport)
 	flexiport->expReadingChanged[0] = FALSE;
 	flexiport->expReadingChanged[1] = FALSE;
 
-	flexiport->extSwitchIn.stateTip = Cleared;
-	flexiport->extSwitchIn.lastStateTip = Cleared;
-	flexiport->extSwitchIn.stateRing = Cleared;
-	flexiport->extSwitchIn.lastStateRing = Cleared;
-	flexiport->extSwitchIn.stateTipRing = Cleared;
-	flexiport->extSwitchIn.lastStateTipRing = Cleared;
-
-	flexiport->extSwitchIn.lastTimeTip = 0;
-	flexiport->extSwitchIn.lastTimeRing = 0;
+	buttons_Init(&flexiport->extSwitchInTip);
+	buttons_Init(&flexiport->extSwitchInRing);
+	buttons_Init(&flexiport->extSwitchInTipRing);
 
 	flexiport->aliveCheckSent = FALSE;
 	flexiport->timerTriggered = CLEAR;
@@ -1652,6 +1646,7 @@ void flexi_gpioInputExtiDeInit(Flexiport* flexiport)
 /**************************************************/
 /**************** CALLBACK HANDLERS ***************/
 /**************************************************/
+/*
 void flexi_holdTimerElapsed(Flexiport* flexiport)
 {
 	HAL_TIM_Base_Stop_IT(flexiport->auxHoldTim);
@@ -1778,7 +1773,7 @@ void flexi_extiGpioCallback(GPIO_TypeDef* port, uint16_t pin, Flexiport* flexipo
 	{
 		if((tickTime - flexiport->extSwitchIn.lastTimeTip) > flexiport->config->flexiDebounceTime)
 		{
-			/* NEW PRESS */
+			// NEW PRESS 
 			if(!interruptState)
 			{
 				// Update states
@@ -1813,7 +1808,7 @@ void flexi_extiGpioCallback(GPIO_TypeDef* port, uint16_t pin, Flexiport* flexipo
 				}
 			}
 
-			/* NEW RELEASED */
+			// NEW RELEASED 
 			else
 			{
 				if(triggerType == 0)
@@ -1868,7 +1863,7 @@ void flexi_extiGpioCallback(GPIO_TypeDef* port, uint16_t pin, Flexiport* flexipo
 	{
 		if((tickTime - flexiport->extSwitchIn.lastTimeRing) > flexiport->config->flexiDebounceTime)
 		{
-			/* NEW PRESS */
+			// NEW PRESS 
 			if(!interruptState)
 			{
 				// Update states
@@ -1903,7 +1898,7 @@ void flexi_extiGpioCallback(GPIO_TypeDef* port, uint16_t pin, Flexiport* flexipo
 				}
 			}
 
-			/* NEW RELEASED */
+			// NEW RELEASED 
 			else
 			{
 				if(triggerType == 1)
@@ -2000,28 +1995,11 @@ void flexi_uartErrorHandler(Flexiport* flexiport)
 	(void)err;
 	//flexi_uartDeInit(flexiport);
 
-	/*
-	flexiport->huart->Instance->CR1 &= 0xFFFE;
-	flexiport->huart->Instance->CR1 |= 0x0001;
-	if(flexiport->config->mode == FlexiDeviceLinkSlave)
-	{
-		flexi_setModeDeviceLinkSlave(flexiport);
-	}
-	else if(flexiport->config->mode == FlexiDeviceLinkMaster)
-	{
-		flexi_setModeDeviceLinkMaster(flexiport);
-	}
-	*/
 	HAL_NVIC_EnableIRQ(flexiport->uartIrq);
 	//flexi_midiBegin(flexiport);
 }
 
-/**
-  * @brief 	Checks the state of every button if a new action has occurred
-  * 		This function should be polled regularly in the main loop
-  * @param 	none
-  * @retval none
-  */
+
 void flexi_triggerPoll(Flexiport* flexiport)
 {
 	// Find which button has a new event, execute the callback handler, then clear the state when finished
@@ -2046,3 +2024,4 @@ void flexi_triggerPoll(Flexiport* flexiport)
 
 	return;
 }
+*/
