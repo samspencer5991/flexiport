@@ -49,6 +49,11 @@
 #define FLEXI_DEBOUNCE_MED_TIME		50
 #define FLEXI_DEBOUNCE_HIGH_TIME 	100
 
+#define FLEXIPORT_NONE		0
+#define FLEXIPORT_TIP		1
+#define FLEXIPORT_RING		2
+#define FLEXIPORT_TIP_RING	3
+
 typedef enum
 {
 	FlexiHalError,
@@ -253,6 +258,8 @@ typedef struct
 	Button extSwitchInTip;		// Physical Tip button
 	Button extSwitchInRing;		// Physical Ring button
 	Button extSwitchInTipRing;	// Emulated button, triggered in software from Tip and Ring events
+	uint32_t extSwitchInLastTime;	// Time since EXT event triggering for state debouncing. 0 = no event
+	uint8_t extSwitchInLastTrigger; // Last EXT event. 0 = none, 1 = Tip, 2 = Ring
 
 	// A separate pin/port may be used for EXTI events to avoid NVIC conflicts
 	// A/B may be changed depending on UART configuration
