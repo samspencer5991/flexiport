@@ -11,6 +11,8 @@
 #ifdef FRAMEWORK_STM32CUBE
 #ifdef STM32G4xx
 #include "stm32g4xx_hal.h"
+#elif defined(STM32H5xx)
+#include "stm32h5xx_hal.h"
 #endif
 #endif
 #include "midi.h"
