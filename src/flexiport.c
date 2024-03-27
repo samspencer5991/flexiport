@@ -207,19 +207,23 @@ void flexi_filterAdcReadings(Flexiport* flexiport)
 		if(i == 0 || flexiport->config->mode == FlexiDualExpressionIn)
 		{
 			flexiport->adcReadingBuf[i][flexiport->adcReadIndex] = flexiport->adcRawReadings[i];
-			uint16_t lastReading = flexiport->filteredReadings[i];
+			//uint16_t lastReading = flexiport->filteredReadings[i];
+			uint8_t lastReading8Bit = flexiport->adcLastChangedReadings[i]/32;
 			uint32_t total = 0;
 			for(int j=0; j<NUM_FLEXI_ADC_BUF_SAMPLES; j++)
 			{
 				total += flexiport->adcReadingBuf[i][j];
 			}
 			flexiport->filteredReadings[i] = total / NUM_FLEXI_ADC_BUF_SAMPLES;
+			uint8_t newReading8Bit = flexiport->filteredReadings[i]/32;
 			// Check if the new reading is different to the previous one and mark it for application use
 			// Use the optional hysteresis definition to help reduce jitter
-			int readingDelta = flexiport->filteredReadings[i] - lastReading;
-			if((readingDelta > FLEXI_ADC_HYSTERESIS_BOUNDRY) || (readingDelta < (-FLEXI_ADC_HYSTERESIS_BOUNDRY)))
+			int readingDelta = flexiport->filteredReadings[i] - flexiport->adcLastChangedReadings[i];
+			if(((readingDelta > FLEXI_ADC_HYSTERESIS_BOUNDRY) || (readingDelta < (-FLEXI_ADC_HYSTERESIS_BOUNDRY)))
+				&& newReading8Bit != lastReading8Bit)
 			{
 				flexiport->expReadingChanged[i] = TRUE;
+				flexiport->adcLastChangedReadings[i] = flexiport->filteredReadings[i];
 			}
 			else
 			{

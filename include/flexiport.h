@@ -20,7 +20,7 @@
 
 #define NUM_DEVICE_LINK_SLAVES	32
 
-#define NUM_FLEXI_ADC_BUF_SAMPLES	3
+#define NUM_FLEXI_ADC_BUF_SAMPLES	2
 
 #ifndef FLEXI_ADC_HYSTERESIS_BOUNDRY
 #define FLEXI_ADC_HYSTERESIS_BOUNDRY 2
@@ -220,6 +220,7 @@ typedef struct
 	uint32_t adcRawReadings[2];
 	uint16_t adcReadingBuf[2][NUM_FLEXI_ADC_BUF_SAMPLES];
 	uint16_t filteredReadings[2];
+	uint16_t adcLastChangedReadings[2];
 	uint8_t adcReadIndex;
 
 	TIM_HandleTypeDef *auxHoldTim;
