@@ -40,12 +40,12 @@
 #define DL_TRI_SWITCH		0x0005
 
 // Device Link generic command list
-#define DEVICE_LINK_ALIVE_CHECK_BYTE			0x80
-#define DEVICE_LINK_BANK_UP_CMD					0x81
-#define DEVICE_LINK_BANK_DOWN_CMD				0x82
-#define DEVICE_LINK_GOTO_BANK_CMD				0x83
-#define DEVICE_LINK_BANK_NAME_CMD				0x84
-#define DEVICE_LINK_SWITCH_GROUP_CMD			0x85
+#define DEVICE_LINK_ALIVE_CHECK_BYTE			0x50
+#define DEVICE_LINK_BANK_UP_CMD					0x51
+#define DEVICE_LINK_BANK_DOWN_CMD				0x52
+#define DEVICE_LINK_GOTO_BANK_CMD				0x53
+#define DEVICE_LINK_BANK_NAME_CMD				0x54
+#define DEVICE_LINK_SWITCH_GROUP_CMD			0x55
 
 #define FLEXI_DEBOUNCE_LOW_TIME 		20
 #define FLEXI_DEBOUNCE_MED_TIME		50
@@ -55,6 +55,16 @@
 #define FLEXIPORT_TIP		1
 #define FLEXIPORT_RING		2
 #define FLEXIPORT_TIP_RING	3
+
+typedef enum
+{
+	DeviceLinkAlive 			= 0x50,
+	DeviceLinkBankUp 			= 0x51,
+	DeviceLinkBankDown 		= 0x52,
+	DeviceLinkGoToBank 		= 0x53,
+	DeviceLinkBankName 		= 0x54,
+	DeviceLinkSwitchGroup 	= 0x55
+} DeviceLinkCommand;
 
 typedef enum
 {
