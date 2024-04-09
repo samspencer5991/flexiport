@@ -134,18 +134,34 @@ typedef enum
 
 typedef enum
 {
-	FlexiSwitchOutOpen,
-	FlexiSwitchOutTipClosed,
-	FlexiSwitchOutRingClosed,
-	FlexiSwitchOutTipRingClosed
+	// Tip
+	FlexiSwitchOutTipClosed			= 0x00,
+	FlexiSwitchOutTipOpen			= 0x01,
+	FlexiSwitchOutTipToggle			= 0x02,
+	// Ring
+	FlexiSwitchOutRingClosed		= 0x03,
+	FlexiSwitchOutRingOpen			= 0x04,
+	FlexiSwitchOutRingToggle		= 0x05,
+	// Tip + Ring
+	FlexiSwitchOutTipRingClosed	= 0x06,
+	FlexiSwitchOutTipRingOpen		= 0x07,
+	FlexiSwitchOutTipRingToggle	= 0x08
 } FlexiSwitchOutMessage;
 
 typedef enum
 {
-	FlexiAllLow,
-	FlexiTipHigh,
-	FlexiRingHigh,
-	FlexiTipRingHigh
+	// Tip
+	FlexiTipHigh			= 0x00,
+	FlexiTipLow				= 0x01,
+	FlexiTipToggle			= 0x02,
+	// Ring
+	FlexiRingHigh			= 0x03,
+	FlexiRingLow			= 0x04,	
+	FlexiRingToggle		= 0x05,
+	// Tip + Ring
+	FlexiTipRingHigh		= 0x06,
+	FlexiTipRingLow		= 0x07,
+	FlexiTipRingToggle	= 0x08
 } FlexiVoltageOutMessage;
 
 typedef struct
