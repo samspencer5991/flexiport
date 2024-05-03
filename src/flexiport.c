@@ -289,10 +289,7 @@ FlexiErrorState flexi_deviceLinkAliveCheck(Flexiport* flexiport, DeviceLink* dev
 	{
 		return FlexiParamError;
 	}
-	uint8_t aliveByte = DEVICE_LINK_ALIVE_CHECK_BYTE;
-
 	midi_Send(flexiport->midiHandle, ActiveSensing, 0, 0, 0);
-	//midi_SendSysEx(flexiport->midiHandle, &aliveByte, 1, sysExId);
 	flexiport->aliveCheckSent = TRUE;
 	return FlexiOk;
 }
@@ -374,6 +371,34 @@ FlexiErrorState flexi_deviceLinkSendGoToBank(Flexiport* flexiport, DeviceLink* d
 		goToBankMessage[1] = bank;
 
 		midi_SendSysEx(flexiport->midiHandle, goToBankMessage, 2, sysExId);
+		return FlexiOk;
+	}
+	return FlexiParamError;
+}
+
+// Sends the current bank name (master only)
+FlexiErrorState flexi_deviceLinkSendBankName(Flexiport* flexiport, DeviceLink* deviceLink, char* bankName, uint8_t bankNameLen)
+{
+	if(deviceLink->role == DeviceLinkMasterRole)
+	{
+		uint8_t bankNameMessage[1+bankNameLen];
+		bankNameMessage[0] = DeviceLinkBankName;
+		for(uint8_t i=0; i<bankNameLen; i++)
+		{
+			bankNameMessage[i+1] = bankName[i];
+		}
+		midi_SendSysEx(flexiport->midiHandle, bankNameMessage, 1+bankNameLen, sysExId);
+		return FlexiOk;
+	}
+	return FlexiParamError;
+}
+
+FlexiErrorState flexi_deviceLinkSendBankNameRequest(Flexiport* flexiport, DeviceLink* deviceLink)
+{
+	if(deviceLink->role == DeviceLinkSlaveRole)
+	{
+		uint8_t bankNameRequestMessage = DeviceLinkBankNameRequest;
+		midi_SendSysEx(flexiport->midiHandle, &bankNameRequestMessage, 1, sysExId);
 		return FlexiOk;
 	}
 	return FlexiParamError;
@@ -1646,386 +1671,3 @@ void flexi_gpioInputExtiDeInit(Flexiport* flexiport)
 	HAL_NVIC_DisableIRQ(flexiport->extiPin2Irq);
 }
 
-
-/**************************************************/
-/**************** CALLBACK HANDLERS ***************/
-/**************************************************/
-/*
-void flexi_holdTimerElapsed(Flexiport* flexiport)
-{
-	HAL_TIM_Base_Stop_IT(flexiport->auxHoldTim);
-	// Check hold states for all the buttons before hold is actioned
-	// This ensures multiple holds are all captured before being actioned
-	// Check not only if the button has not been released, but if a timer event was triggered for that button
-	if(flexiport->extSwitchIn.lastStateTip == Pressed && (flexiport->timerTriggered & 1))
-	{
-		flexiport->extSwitchIn.stateTip = Held;
-		flexiport->extSwitchIn.lastStateTip = Held;
-	}
-	if(flexiport->extSwitchIn.lastStateRing == Pressed && ((flexiport->timerTriggered >> 1) & 1))
-	{
-		flexiport->extSwitchIn.stateRing = Held;
-		flexiport->extSwitchIn.lastStateRing = Held;
-	}
-	if(flexiport->extSwitchIn.lastStateTipRing == Pressed && ((flexiport->timerTriggered >> 2) & 1))
-	{
-		flexiport->extSwitchIn.stateTipRing = Held;
-		flexiport->extSwitchIn.lastStateTipRing = Held;
-	}
-	flexiport->timerTriggered = CLEAR;
-}
-
-void flexi_extiGpioCallback(GPIO_TypeDef* port, uint16_t pin, Flexiport* flexiport)
-{
-	// and whether it was a press or release action
-	uint8_t interruptState = 0;
-	uint32_t tickTime;
-	static uint8_t triggerType = 0;			// 0 = tip, 1 = ring, 2 = tip + ring
-
-	// Determine whether it's a tip, ring, or both that has been triggered
-	if(pin == flexiport->extiPinTip)
-	{
-		if((port->IDR & pin) != (uint32_t)GPIO_PIN_RESET)
-		{
-			// Check for physical logic state mode
-			if(flexiport->extSwitchIn.logicMode == ActiveLow)
-			{
-				interruptState = 1;	// Released
-			}
-			else
-			{
-				interruptState = 0;	// Pressed
-				if((flexiport->extiPortRing->IDR & flexiport->extiPinRing) != (uint32_t)GPIO_PIN_RESET)
-				{
-					triggerType = 2;	// Tip + ring
-				}
-				else
-				{
-					triggerType = 0;	// Just the tip ;)
-				}
-			}
-		}
-		else
-		{
-			// Check for physical logic state mode
-			if(flexiport->extSwitchIn.logicMode == ActiveLow)
-			{
-				interruptState = 0;	// Pressed
-				if((flexiport->extiPortRing->IDR & flexiport->extiPinRing) == (uint32_t)GPIO_PIN_RESET)
-				{
-					triggerType = 2;	// Tip + ring
-				}
-				else
-				{
-					triggerType = 0;	// Just the tip ;)
-				}
-			}
-			else
-			{
-				interruptState = 1; // Released
-			}
-		}
-	}
-	if(pin == flexiport->extiPinRing)
-	{
-		if((port->IDR & pin) != (uint32_t)GPIO_PIN_RESET)
-		{
-			// Check for physical logic state mode
-			if(flexiport->extSwitchIn.logicMode == ActiveLow)
-			{
-				interruptState = 1;	// Released
-			}
-			else
-			{
-				interruptState = 0;	// Pressed
-				if((flexiport->extiPortTip->IDR & flexiport->extiPinTip) != (uint32_t)GPIO_PIN_RESET)
-				{
-					triggerType = 2;	// Tip + ring
-				}
-				else
-				{
-					triggerType = 1;	// Just the ring
-				}
-			}
-		}
-		else
-		{
-			// Check for physical logic state mode
-			if(flexiport->extSwitchIn.logicMode == ActiveLow)
-			{
-				interruptState = 0;	// Pressed
-				if((flexiport->extiPortTip->IDR & flexiport->extiPinTip) == (uint32_t)GPIO_PIN_RESET)
-				{
-					triggerType = 2;	// Tip + ring
-				}
-				else
-				{
-					triggerType = 1;	// Just the ring
-				}
-			}
-			else
-			{
-				interruptState = 1; // Released
-			}
-		}
-	}
-
-	// Debounce correct button and set handler flags to indicate an action
-	tickTime = HAL_GetTick();
-	// Pin A
-	if(pin == flexiport->extiPinTip)
-	{
-		if((tickTime - flexiport->extSwitchIn.lastTimeTip) > flexiport->config->flexiDebounceTime)
-		{
-			// NEW PRESS 
-			if(!interruptState)
-			{
-				// Update states
-				if(triggerType == 0)
-				{
-					if(flexiport->auxHoldTim != NULL)
-					{
-						if(flexiport->timerTriggered == CLEAR)
-						{
-							flexiport->timerTriggered |= (1 << 0);
-							HAL_TIM_Base_Start_IT(flexiport->auxHoldTim);
-						}
-					}
-					flexiport->extSwitchIn.stateTip = Pressed;
-					flexiport->extSwitchIn.lastStateTip = Pressed;
-					flexiport->extSwitchIn.lastTimeTip = tickTime;
-				}
-				else if(triggerType == 2)
-				{
-					if(flexiport->auxHoldTim != NULL)
-					{
-						if(flexiport->timerTriggered == CLEAR)
-						{
-							flexiport->timerTriggered |= (1 << 2);
-							HAL_TIM_Base_Start_IT(flexiport->auxHoldTim);
-						}
-					}
-					flexiport->extSwitchIn.stateTipRing = Pressed;
-					flexiport->extSwitchIn.lastStateTipRing = Pressed;
-					flexiport->extSwitchIn.lastTimeRing = tickTime;
-					flexiport->extSwitchIn.lastTimeTip = tickTime;
-				}
-			}
-
-			// NEW RELEASED 
-			else
-			{
-				if(triggerType == 0)
-				{
-					if(flexiport->extSwitchIn.lastStateTip == Pressed)
-					{
-						if(flexiport->auxHoldTim != NULL)
-						{
-							flexiport->timerTriggered = CLEAR;
-							HAL_TIM_Base_Stop_IT(flexiport->auxHoldTim);
-							__HAL_TIM_SET_COUNTER(flexiport->auxHoldTim, 0);
-						}
-						flexiport->extSwitchIn.stateTip = Released;
-						flexiport->extSwitchIn.lastStateTip = Released;
-					}
-					else if(flexiport->extSwitchIn.lastStateTip == Held)
-					{
-						// Button was held, the hold event triggered, and then released
-						// Hold timer doesn't need to be stopped as that was done in the timer callback
-						flexiport->extSwitchIn.stateTip = HeldReleased;
-						flexiport->extSwitchIn.lastStateTip = HeldReleased;
-					}
-					flexiport->extSwitchIn.lastTimeTip = tickTime;
-				}
-				else if(triggerType == 2)
-				{
-					if(flexiport->extSwitchIn.lastStateTipRing == Pressed)
-					{
-						if(flexiport->auxHoldTim != NULL)
-						{
-							flexiport->timerTriggered = CLEAR;
-							HAL_TIM_Base_Stop_IT(flexiport->auxHoldTim);
-							__HAL_TIM_SET_COUNTER(flexiport->auxHoldTim, 0);
-						}
-						flexiport->extSwitchIn.stateTipRing = Released;
-						flexiport->extSwitchIn.lastStateTipRing = Released;
-					}
-					else if(flexiport->extSwitchIn.lastStateTipRing == Held)
-					{
-						// Button was held, the hold event triggered, and then released
-						// Hold timer doesn't need to be stopped as that was done in the timer callback
-						flexiport->extSwitchIn.stateTipRing = HeldReleased;
-						flexiport->extSwitchIn.lastStateTipRing = HeldReleased;
-					}
-					flexiport->extSwitchIn.lastTimeRing = tickTime;
-					flexiport->extSwitchIn.lastTimeTip = tickTime;
-				}
-			}
-		}
-	}
-	else if(pin == flexiport->extiPinRing)
-	{
-		if((tickTime - flexiport->extSwitchIn.lastTimeRing) > flexiport->config->flexiDebounceTime)
-		{
-			// NEW PRESS 
-			if(!interruptState)
-			{
-				// Update states
-				if(triggerType == 1)
-				{
-					if(flexiport->auxHoldTim != NULL)
-					{
-						if(flexiport->timerTriggered == CLEAR)
-						{
-							flexiport->timerTriggered |= (1 << 1);
-							HAL_TIM_Base_Start_IT(flexiport->auxHoldTim);
-						}
-					}
-					flexiport->extSwitchIn.stateRing = Pressed;
-					flexiport->extSwitchIn.lastStateRing = Pressed;
-					flexiport->extSwitchIn.lastTimeRing = tickTime;
-				}
-				else if(triggerType == 2)
-				{
-					if(flexiport->auxHoldTim != NULL)
-					{
-						if(flexiport->timerTriggered == CLEAR)
-						{
-							flexiport->timerTriggered |= (1 << 2);
-							HAL_TIM_Base_Start_IT(flexiport->auxHoldTim);
-						}
-					}
-					flexiport->extSwitchIn.stateTipRing = Pressed;
-					flexiport->extSwitchIn.lastStateTipRing = Pressed;
-					flexiport->extSwitchIn.lastTimeRing = tickTime;
-					flexiport->extSwitchIn.lastTimeTip = tickTime;
-				}
-			}
-
-			// NEW RELEASED 
-			else
-			{
-				if(triggerType == 1)
-				{
-					if(flexiport->extSwitchIn.lastStateRing == Pressed)
-					{
-						if(flexiport->auxHoldTim != NULL)
-						{
-							flexiport->timerTriggered = CLEAR;
-							HAL_TIM_Base_Stop_IT(flexiport->auxHoldTim);
-							__HAL_TIM_SET_COUNTER(flexiport->auxHoldTim, 0);
-						}
-						flexiport->extSwitchIn.stateRing = Released;
-						flexiport->extSwitchIn.lastStateRing = Released;
-					}
-					else if(flexiport->extSwitchIn.lastStateRing == Held)
-					{
-						// Button was held, the hold event triggered, and then released
-						// Hold timer doesn't need to be stopped as that was done in the timer callback
-						flexiport->extSwitchIn.stateRing = HeldReleased;
-						flexiport->extSwitchIn.lastStateRing = HeldReleased;
-					}
-					flexiport->extSwitchIn.lastTimeRing = tickTime;
-				}
-				else if(triggerType == 2)
-				{
-					if(flexiport->extSwitchIn.lastStateTipRing == Pressed)
-					{
-						if(flexiport->auxHoldTim != NULL)
-						{
-							flexiport->timerTriggered = CLEAR;
-							HAL_TIM_Base_Stop_IT(flexiport->auxHoldTim);
-							__HAL_TIM_SET_COUNTER(flexiport->auxHoldTim, 0);
-						}
-						flexiport->extSwitchIn.stateTipRing = Released;
-						flexiport->extSwitchIn.lastStateTipRing = Released;
-					}
-					else if(flexiport->extSwitchIn.lastStateTipRing == Held)
-					{
-						// Button was held, the hold event triggered, and then released
-						// Hold timer doesn't need to be stopped as that was done in the timer callback
-						flexiport->extSwitchIn.stateTipRing = HeldReleased;
-						flexiport->extSwitchIn.lastStateTipRing = HeldReleased;
-					}
-					flexiport->extSwitchIn.lastTimeRing = tickTime;
-					flexiport->extSwitchIn.lastTimeTip = tickTime;
-				}
-			}
-		}
-	}
-}
-
-void flexi_uartErrorHandler(Flexiport* flexiport)
-{
-	HAL_NVIC_DisableIRQ(flexiport->uartIrq);
-
-	uint16_t err = 0;
-
-	//err = flexiport->huart->Instance->ISR;
-	//err = flexiport->huart->Instance->ICR;
-
-	HAL_UART_AbortTransmit_IT(flexiport->huart);
-
-	// Check the particular error
-	if(flexiport->huart->ErrorCode == HAL_UART_ERROR_PE)
-	{
-		__HAL_UART_CLEAR_FEFLAG(flexiport->huart);
-	}
-	else if(flexiport->huart->ErrorCode == HAL_UART_ERROR_NE)
-	{
-
-	}
-	else if(flexiport->huart->ErrorCode == HAL_UART_ERROR_FE)
-	{
-		// Write '1' to FECF in ICR register
-
-	}
-	else if(flexiport->huart->ErrorCode == HAL_UART_ERROR_ORE)
-	{
-		// Clear RXNE bit
-		err = flexiport->huart->Instance->RDR;
-		// Clear ORE flag
-		__HAL_UART_CLEAR_OREFLAG(flexiport->huart);
-	}
-	else if(flexiport->huart->ErrorCode == HAL_UART_ERROR_DMA)
-	{
-
-	}
-	else if(flexiport->huart->ErrorCode == HAL_UART_ERROR_RTO)
-	{
-
-	}
-	flexiport->huart->ErrorCode = HAL_UART_ERROR_NONE;
-	(void)err;
-	//flexi_uartDeInit(flexiport);
-
-	HAL_NVIC_EnableIRQ(flexiport->uartIrq);
-	//flexi_midiBegin(flexiport);
-}
-
-
-void flexi_triggerPoll(Flexiport* flexiport)
-{
-	// Find which button has a new event, execute the callback handler, then clear the state when finished
-	if(flexiport->extSwitchIn.stateTipRing != Cleared)
-	{
-		ButtonState tempState = flexiport->extSwitchIn.stateTipRing;
-		flexiport->extSwitchIn.stateTipRing = Cleared;
-		flexiport->extSwitchIn.handlerTipRing(tempState);
-	}
-	else if(flexiport->extSwitchIn.stateTip != Cleared)
-	{
-		ButtonState tempState = flexiport->extSwitchIn.stateTip;
-		flexiport->extSwitchIn.stateTip = Cleared;
-		flexiport->extSwitchIn.handlerTip(tempState);
-	}
-	else if(flexiport->extSwitchIn.stateRing != Cleared)
-	{
-		ButtonState tempState = flexiport->extSwitchIn.stateRing;
-		flexiport->extSwitchIn.stateRing = Cleared;
-		flexiport->extSwitchIn.handlerRing(tempState);
-	}
-
-	return;
-}
-*/

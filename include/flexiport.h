@@ -58,12 +58,13 @@
 
 typedef enum
 {
-	DeviceLinkAlive 			= 0x50,
-	DeviceLinkBankUp 			= 0x51,
-	DeviceLinkBankDown 		= 0x52,
-	DeviceLinkGoToBank 		= 0x53,
-	DeviceLinkBankName 		= 0x54,
-	DeviceLinkSwitchGroup 	= 0x55
+	DeviceLinkAlive 				= 0x50,
+	DeviceLinkBankUp 				= 0x51,
+	DeviceLinkBankDown 			= 0x52,
+	DeviceLinkGoToBank 			= 0x53,
+	DeviceLinkBankName 			= 0x54,
+	DeviceLinkSwitchGroup 		= 0x55,
+	DeviceLinkBankNameRequest 	= 0x56
 } DeviceLinkCommand;
 
 typedef enum
@@ -342,6 +343,8 @@ FlexiErrorState flexi_deviceLinkAliveCheck(Flexiport* flexiport, DeviceLink* dev
 FlexiErrorState flexi_deviceLinkSendBankUp(Flexiport* flexiport, DeviceLink* deviceLink, char* bankName, uint8_t bankNameLen);
 FlexiErrorState flexi_deviceLinkSendBankDown(Flexiport* flexiport, DeviceLink* deviceLink, char* bankName, uint8_t bankNameLen);
 FlexiErrorState flexi_deviceLinkSendGoToBank(Flexiport* flexiport, DeviceLink* deviceLink, uint8_t bank, char* bankName, uint8_t bankNameLen);
+FlexiErrorState flexi_deviceLinkSendBankName(Flexiport* flexiport, DeviceLink* deviceLink, char* bankName, uint8_t bankNameLen);
+FlexiErrorState flexi_deviceLinkSendBankNameRequest(Flexiport* flexiport, DeviceLink* deviceLink);
 FlexiErrorState flexi_deviceLinkSendSwitchGroupEvent(Flexiport* flexiport, DeviceLink* deviceLink,
 																											uint8_t group, uint8_t switchEvent);
 FlexiErrorState flexi_rxUartHandler(Flexiport* flexiport, uint16_t size);
@@ -359,11 +362,7 @@ FlexiErrorState flexi_setTipSleeveSwitch(Flexiport* flexiPort, FlexiSwitchState 
 FlexiErrorState flexi_setRingSleeveSwitch(Flexiport* flexiPort, FlexiSwitchState state);
 FlexiErrorState flexi_setSleeveGroundSwitch(Flexiport* flexiport, FlexiSwitchState state);
 
-void flexi_extiGpioCallback(GPIO_TypeDef* port, uint16_t pin, Flexiport* flexiport);
-void flexi_triggerPoll(Flexiport* flexiport);
+
 void flexi_filterAdcReadings(Flexiport* flexiport);
 FlexiErrorState flexi_setHoldTimer(Flexiport* flexiport, TIM_HandleTypeDef *timHandle, uint16_t time);
-void flexi_holdTimerElapsed(Flexiport* flexiport);
-
-void flexi_uartErrorHandler(Flexiport* flexiport);
 #endif /* FLEXIPORT_H_ */
