@@ -37,7 +37,7 @@
 #define TRUE	1
 
 // Peripheral Init and De-Init private functions
-FlexiErrorState flexi_gpioOutputInit(Flexiport* flexiport);
+//FlexiErrorState flexi_gpioOutputInit(Flexiport* flexiport);
 FlexiErrorState flexi_gpioInputExtiInit(Flexiport* flexiport);
 FlexiErrorState flexi_uartInit(Flexiport* flexiport, uint8_t swapPins, uint8_t speed);
 FlexiErrorState flexi_adcDualInit(Flexiport* flexiport);
@@ -65,10 +65,8 @@ void flexi_setPortSwitchesFavSwitchOut(Flexiport* flexiport);
 
 uint16_t holdTime;
 
-/**************************************************/
-/**************** CONFIG & UTILITY ****************/
-/**************************************************/
 
+//--------------- Config & Utility ---------------//
 void flexi_initPort(Flexiport* flexiport)
 {
 	flexiport->config->mode = FlexiUnassigned;
@@ -269,9 +267,7 @@ FlexiErrorState flexi_setHoldTimer(Flexiport* flexiport, TIM_HandleTypeDef *timH
 }
 
 
-/**************************************************/
-/****************** DEVICE LINK *******************/
-/**************************************************/
+//--------------- Device Link ---------------//
 void flexi_initDeviceLink(DeviceLink* deviceLink)
 {
 	deviceLink->state = DeviceLinkNotActive;
@@ -415,10 +411,7 @@ FlexiErrorState flexi_deviceLinkSendSwitchGroupEvent(Flexiport* flexiport, Devic
 	return FlexiOk;
 }
 
-
-/**************************************************/
-/******************** SET MODE ********************/
-/**************************************************/
+//--------------- Mode Configuration ---------------//
 FlexiErrorState flexi_setModeUnassigned(Flexiport* flexiport)
 {
 	// If a special hardware mode has been assigned to the port, perform de-init
@@ -458,6 +451,16 @@ FlexiErrorState flexi_setModeMidiOut(Flexiport* flexiport, uint8_t midiType)
 		flexi_uartInit(flexiport, SWAP_UART_PINS, UART_STANDARD_SPEED);
 		// Once all peripherals and pins are configured, route the pins to the connector
 		flexi_setPortSwitchesMidiOut(flexiport, TYPEA_DATA_WIRING);
+
+		if(flexiport->flexiportLite)
+		{
+			GPIO_InitTypeDef GPIO_InitStruct = {0};
+			GPIO_InitStruct.Pin = flexiport->pinB;
+			GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+			GPIO_InitStruct.Pull = GPIO_NOPULL;
+			GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+			HAL_GPIO_Init(flexiport->portB, &GPIO_InitStruct);
+		}
 	}
 
 	// Type B
@@ -468,6 +471,15 @@ FlexiErrorState flexi_setModeMidiOut(Flexiport* flexiport, uint8_t midiType)
 		flexi_uartInit(flexiport, NO_SWAP_UART_PINS, UART_STANDARD_SPEED);
 		// Once all peripherals and pins are configured, route the pins to the connector
 		flexi_setPortSwitchesMidiOut(flexiport, TYPEB_DATA_WIRING);
+		if(flexiport->flexiportLite)
+		{
+			GPIO_InitTypeDef GPIO_InitStruct = {0};
+			GPIO_InitStruct.Pin = flexiport->pinA;
+			GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+			GPIO_InitStruct.Pull = GPIO_NOPULL;
+			GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+			HAL_GPIO_Init(flexiport->portA, &GPIO_InitStruct);
+		}
 	}
 
 	// Tip active
@@ -783,9 +795,8 @@ FlexiErrorState flexi_setModeFavSwitchOut(Flexiport* flexiport)
 	return FlexiOk;
 }
 
-/**************************************************/
-/***************** SWITCH CONTROL *****************/
-/**************************************************/
+
+//--------------- Switch Control ---------------//
 FlexiErrorState flexi_setTipVSwitch(Flexiport* flexiport, FlexiSwitchState state)
 {
 	// Ensure that the action is available for the flexiport type
@@ -896,121 +907,152 @@ FlexiErrorState flexi_setSleeveGroundSwitch(Flexiport* flexiport, FlexiSwitchSta
 	return FlexiParamError;
 }
 
-/**************************************************/
-/**************** SIGNAL SWITCHING ****************/
-/**************************************************/
+
+//--------------- Signal Switching ---------------//
 void flexi_setPortSwitchesIdle(Flexiport* flexiport)
 {
-	// Disconnect all the signal switches
-	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	if(!flexiport->flexiportLite)
+	{
+		// Disconnect all the signal switches
+		HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	}
 }
 
 void flexi_setPortSwitchesMidiOut(Flexiport* flexiport, uint8_t dataWiring)
 {
-	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
-	if(dataWiring == TYPEA_DATA_WIRING)
+	if(!flexiport->flexiportLite)
 	{
-		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
+		if(dataWiring == TYPEA_DATA_WIRING)
+		{
+			HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_SET);
+		}
+		else if(dataWiring == TYPEB_DATA_WIRING)
+		{
+			HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_SET);
+			HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		}
+		else if(dataWiring == TIP_DATA_WIRING || dataWiring == RING_DATA_WIRING)
+		{
+			HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+			HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		}
+		HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
 	}
-	else if(dataWiring == TYPEB_DATA_WIRING)
+	else
 	{
-		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_SET);
-		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		if(dataWiring == TYPEA_DATA_WIRING)
+		{
+			HAL_GPIO_WritePin(flexiport->portB, flexiport->pinB, GPIO_PIN_SET);
+		}
+		else if(dataWiring == TYPEB_DATA_WIRING)
+		{
+			HAL_GPIO_WritePin(flexiport->portA, flexiport->pinA, GPIO_PIN_SET);
+		}
 	}
-	else if(dataWiring == TIP_DATA_WIRING || dataWiring == RING_DATA_WIRING)
-	{
-		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
-	}
-	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
 }
 
 void flexi_setPortSwitchesDeviceLink(Flexiport* flexiport)
 {
-	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
+	if(!flexiport->flexiportLite)
+	{
+		HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
 
-	HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
 
-	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+		HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	}
 }
 
 void flexi_setPortSwitchesSwitchIn(Flexiport* flexiport)
 {
-	// Disconnect all the signal switches
-	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	if(!flexiport->flexiportLite)
+	{
+		// Disconnect all the signal switches
+		HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	}
 }
 
 void flexi_setPortSwitchesSwitchOut(Flexiport* flexiport)
 {
-	// Disconnect the signal sleeve switches first to prevent shorts
-	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
-	// Disconnect channel A and B from the microcontroller pins
-	HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
-	// Disconnect ground switch from the sleeve
-	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	if(!flexiport->flexiportLite)
+	{
+		// Disconnect the signal sleeve switches first to prevent shorts
+		HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
+		// Disconnect channel A and B from the microcontroller pins
+		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		// Disconnect ground switch from the sleeve
+		HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	}
 }
 
 void flexi_setPortSwitchesFavSwitchOut(Flexiport* flexiport)
 {
-	// Disconnect the signal sleeve switches first to prevent shorts
-	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
-	// Disconnect channel A and B from the microcontroller pins
-	HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
-	// Disconnect ground switch from the sleeve
-	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	if(!flexiport->flexiportLite)
+	{
+		// Disconnect the signal sleeve switches first to prevent shorts
+		HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
+		// Disconnect channel A and B from the microcontroller pins
+		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		// Disconnect ground switch from the sleeve
+		HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	}
 }
 
 void flexi_setPortSwitchesPulseOut(Flexiport* flexiport)
 {
 	// Disconnect the signal sleeve switches first to prevent shorts
-	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
-	// Disconnect channel A and B from the microcontroller pins
-	HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
-	// Connect ground switch to the sleeve
-	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	if(!flexiport->flexiportLite)
+	{
+		HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
+		// Disconnect channel A and B from the microcontroller pins
+		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		// Connect ground switch to the sleeve
+		HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+	}
 }
 
 void flexi_setPortSwitchesExpressionIn(Flexiport* flexiport, FlexiportMode expMode)
 {
 	// For a single passive expression pedal, the ring needs to be connected to a constant voltage
 	// However for a dual expression pedal, the pedal outputs it's own voltage.
-	
-	HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
-	HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
-	if(expMode == FlexiSingleExpressionIn)
+	if(!flexiport->flexiportLite)
 	{
-		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_SET);
-	}
-	else if(expMode == FlexiDualExpressionIn)
+		HAL_GPIO_WritePin(flexiport->sleeveAPort, flexiport->sleeveAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->sleeveBPort, flexiport->sleeveBPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->vAPort, flexiport->vAPin, GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(flexiport->gndSleevePort, flexiport->gndSleevePin, GPIO_PIN_SET);
+		if(expMode == FlexiSingleExpressionIn)
+		{
+			HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_SET);
+		}
+		else if(expMode == FlexiDualExpressionIn)
 	{
 		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+	}
 	}
 }
 
 
-/**************************************************/
-/***************** PERIPHERAL INIT ****************/
-/**************************************************/
+//--------------- Peripheral Initialisation ---------------//
 FlexiErrorState flexi_gpioOutputInit(Flexiport* flexiport)
 {
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -1022,13 +1064,13 @@ FlexiErrorState flexi_gpioOutputInit(Flexiport* flexiport)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(flexiport->portB, &GPIO_InitStruct);
+  HAL_GPIO_Init(flexiport->portA, &GPIO_InitStruct);
 
   GPIO_InitStruct.Pin = flexiport->pinB;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(flexiport->portA, &GPIO_InitStruct);
+  HAL_GPIO_Init(flexiport->portB, &GPIO_InitStruct);
   return FlexiOk;
 }
 
@@ -1112,12 +1154,12 @@ FlexiErrorState flexi_uartInit(Flexiport* flexiport, uint8_t swapPins, uint8_t s
 	flexiport->huart->Init.ClockPrescaler = UART_PRESCALER_DIV1;
 	if(swapPins)
 	{
-	flexiport->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_SWAP_INIT;
-	flexiport->huart->AdvancedInit.Swap = UART_ADVFEATURE_SWAP_ENABLE;
+		flexiport->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_SWAP_INIT;
+		flexiport->huart->AdvancedInit.Swap = UART_ADVFEATURE_SWAP_ENABLE;
 	}
 	else
 	{
-	flexiport->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+		flexiport->huart->AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
 	}
 
 	if (HAL_UART_Init(flexiport->huart) != HAL_OK)
@@ -1495,10 +1537,7 @@ void flexi_configureUartAltFunction(GPIO_InitTypeDef* GPIO_InitStruct, Flexiport
 }
 
 
-/**************************************************/
-/**************** PERIPHERAL DEINIT ***************/
-/**************************************************/
-
+//--------------- Peripheral Deinitialisation ---------------//
 void flexi_checkForDeInit(Flexiport* flexiport)
 {
 	switch(flexiport->config->mode)

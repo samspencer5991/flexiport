@@ -262,34 +262,34 @@ typedef struct
 
 	FlexiUartTrsConfig trsWiringConfig;	// TX/RX order on the tip and ring
 	// Tip (A) to sleeve switch
-	GPIO_TypeDef* sleeveAPort;					// hardware port
-	uint16_t sleeveAPin;								// hardware pin
+	GPIO_TypeDef* sleeveAPort;				// hardware port
+	uint16_t sleeveAPin;						// hardware pin
 	// Ring (B) to sleeve switch
-	GPIO_TypeDef* sleeveBPort;					// hardware port
-	uint16_t sleeveBPin;								// hardware pin
+	GPIO_TypeDef* sleeveBPort;				// hardware port
+	uint16_t sleeveBPin;						// hardware pin
 	// Tip (A) to 3V switch
-	GPIO_TypeDef* vAPort;								// hardware port
-	uint16_t vAPin;											// hardware pin
+	GPIO_TypeDef* vAPort;					// hardware port
+	uint16_t vAPin;							// hardware pin
 	// Ring (B) to 3V switch
-	GPIO_TypeDef* vBPort;								// hardware port
-	uint16_t vBPin;											// hardware pin
+	GPIO_TypeDef* vBPort;					// hardware port
+	uint16_t vBPin;							// hardware pin
 	// Sleeve to ground switch
-	GPIO_TypeDef* gndSleevePort;				// hardware port
-	uint16_t gndSleevePin;							// hardware pin
+	GPIO_TypeDef* gndSleevePort;			// hardware port
+	uint16_t gndSleevePin;					// hardware pin
 	// Sleeve to ground switch
-	GPIO_TypeDef* sensePort;						// hardware port
-	uint16_t sensePin;									// hardware pin
+	GPIO_TypeDef* sensePort;				// hardware port
+	uint16_t sensePin;						// hardware pin
 
-	MidiInterface* midiHandle;					// Pointer to the MIDI handle for linking with MIDI library
+	MidiInterface* midiHandle;				// Pointer to the MIDI handle for linking with MIDI library
 	uint8_t rawRxMidiBuf[FLEXI_MIDI_RX_BUF_SIZE];
 
 	// External footswitch input variables
 	//FlexiExtIn extSwitchIn;
-	Button extSwitchInTip;		// Physical Tip button
-	Button extSwitchInRing;		// Physical Ring button
-	Button extSwitchInTipRing;	// Emulated button, triggered in software from Tip and Ring events
-	uint32_t extSwitchInLastTime;	// Time since EXT event triggering for state debouncing. 0 = no event
-	uint8_t extSwitchInLastTrigger; // Last EXT event. 0 = none, 1 = Tip, 2 = Ring
+	Button extSwitchInTip;				// Physical Tip button
+	Button extSwitchInRing;				// Physical Ring button
+	Button extSwitchInTipRing;			// Emulated button, triggered in software from Tip and Ring events
+	uint32_t extSwitchInLastTime;		// Time since EXT event triggering for state debouncing. 0 = no event
+	uint8_t extSwitchInLastTrigger; 	// Last EXT event. 0 = none, 1 = Tip, 2 = Ring
 
 	// A separate pin/port may be used for EXTI events to avoid NVIC conflicts
 	// A/B may be changed depending on UART configuration
@@ -305,6 +305,7 @@ typedef struct
 	DeviceLinkState deviceLinkPortState;
 	uint8_t aliveCheckSent;					// Flag to indicate that an alive check has been sent
 	DeviceLinkPortDirection deviceLinkDirection;
+	uint8_t flexiportLite;
 } Flexiport;
 
 typedef struct
@@ -362,6 +363,7 @@ FlexiErrorState flexi_setTipSleeveSwitch(Flexiport* flexiPort, FlexiSwitchState 
 FlexiErrorState flexi_setRingSleeveSwitch(Flexiport* flexiPort, FlexiSwitchState state);
 FlexiErrorState flexi_setSleeveGroundSwitch(Flexiport* flexiport, FlexiSwitchState state);
 
+FlexiErrorState flexi_gpioOutputInit(Flexiport* flexiport);
 
 void flexi_filterAdcReadings(Flexiport* flexiport);
 FlexiErrorState flexi_setHoldTimer(Flexiport* flexiport, TIM_HandleTypeDef *timHandle, uint16_t time);
