@@ -528,7 +528,7 @@ FlexiErrorState flexi_setModeDualSwitchIn(Flexiport* flexiport)
 	}
 
 	flexiport->config->mode = FlexiSwitchIn;
-	// Initialise the UART peripheral
+	// Initialise the EXTI configuration
 	flexi_gpioInputExtiInit(flexiport);
 	// Once all peripherals and pins are configured, route the pins to the connector
 	flexi_setPortSwitchesSwitchIn(flexiport);
