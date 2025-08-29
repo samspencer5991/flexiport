@@ -1045,9 +1045,16 @@ void flexi_setPortSwitchesExpressionIn(Flexiport* flexiport, FlexiportMode expMo
 			HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_SET);
 		}
 		else if(expMode == FlexiDualExpressionIn)
-	{
-		HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		{
+			HAL_GPIO_WritePin(flexiport->vBPort, flexiport->vBPin, GPIO_PIN_RESET);
+		}
 	}
+	else
+	{
+		if(expMode == FlexiSingleExpressionIn)
+		{
+			HAL_GPIO_WritePin(flexiport->portB, flexiport->pinB, GPIO_PIN_SET);
+		}
 	}
 }
 
@@ -1124,10 +1131,18 @@ FlexiErrorState flexi_adcDualInit(Flexiport* flexiport)
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	HAL_GPIO_Init(flexiport->adcPortTip, &GPIO_InitStruct);
 
-	GPIO_InitStruct.Pin = flexiport->adcPinRing;
-	GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-	GPIO_InitStruct.Pull = GPIO_NOPULL;
-	HAL_GPIO_Init(flexiport->adcPortRing, &GPIO_InitStruct);
+	if(flexiport->config->mode == FlexiSingleExpressionIn && flexiport->flexiportLite)
+	{
+		// For a single expression pedal on a flexiport lite, the ring pin is not used for ADC
+		// Instead it is set to a high state to provide a constant voltage reference
+		HAL_GPIO_WritePin(flexiport->portB, flexiport->pinB, GPIO_PIN_SET);
+		GPIO_InitStruct.Pin = flexiport->adcPinRing;
+		GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+		GPIO_InitStruct.Pull = GPIO_NOPULL;
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+		HAL_GPIO_Init(flexiport->adcPortRing, &GPIO_InitStruct);
+		return FlexiOk;
+	}
 
   return FlexiOk;
 }
