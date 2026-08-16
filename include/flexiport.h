@@ -9,11 +9,13 @@
 #define FLEXIPORT_H_
 
 #ifdef FRAMEWORK_STM32CUBE
-    #ifdef STM32G4xx
-        #include "stm32g4xx_hal.h"
-    #elif defined(STM32H5xx)
-        #include "stm32h5xx_hal.h"
-    #endif
+#ifdef STM32G4xx
+#include "stm32g4xx_hal.h"
+#elif defined(STM32H5xx)
+#include "stm32h5xx_hal.h"
+#elif defined(STM32H7xx)
+#include "stm32h7xx_hal.h"
+#endif
 #endif
 #include "buttons.h"
 #include "midi.h"
@@ -223,7 +225,11 @@ typedef struct
     // ADC
     ADC_HandleTypeDef *hadc;
     DMA_HandleTypeDef *hadcDma;
+#ifdef STM32H7xx
+	DMA_Stream_TypeDef *adcDmaChannel;
+#else
 	DMA_Channel_TypeDef *adcDmaChannel;
+#endif
 
     uint32_t adcChannelA;
     uint32_t adcChannelB;
@@ -238,7 +244,12 @@ typedef struct
 	// UART
     UART_HandleTypeDef *huart;
     DMA_HandleTypeDef   *huartDma;
-    DMA_Channel_TypeDef *uartDmaChannel;
+    
+#ifdef STM32H7xx
+	DMA_Stream_TypeDef *uartDmaChannel;
+#else
+	DMA_Channel_TypeDef *uartDmaChannel;
+#endif
     //IRQn_Type            uartDmaIrq;
 
     TIM_HandleTypeDef *auxHoldTim;
